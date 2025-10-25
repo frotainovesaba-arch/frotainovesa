@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import unicodedata
@@ -67,8 +68,10 @@ if uploaded:
     try:
         if uploaded.name.endswith(".csv"):
             df = pd.read_csv(uploaded)
-        else:
-            df = pd.read_excel(uploaded)
+        elif uploaded.name.endswith(".xlsx"):
+            df = pd.read_excel(uploaded, engine='openpyxl')
+        else:  # .xls
+            df = pd.read_excel(uploaded, engine='xlrd')
     except Exception as e:
         st.error(f"Erro ao ler a planilha: {e}")
         st.stop()
@@ -101,7 +104,8 @@ if uploaded:
         # Filtrar por tipo (se houver coluna 'Aplicavel' e tipo selecionado)
         df_filtered = df.copy()
         tipo_sel = tipo.upper()
-        if "Aplicavel" in df.columns and tipo_sel != "(NÃO ESPECIFICADO)":
+        # CORREÇÃO: Comparação case-insensitive mais robusta
+        if "Aplicavel" in df.columns and tipo_sel not in ["(NÃO ESPECIFICADO)", ""]:
             mask = df["Aplicavel"].fillna("").str.upper().str.contains(tipo_sel, na=False)
             if mask.any():
                 df_filtered = df[mask].copy()
@@ -117,7 +121,7 @@ if uploaded:
             s += SequenceMatcher(None, query_norm, row["_item_norm"]).ratio() * 0.7
             s += SequenceMatcher(None, query_norm, row["_grupo_norm"]).ratio() * 0.3
 
-            if "Aplicavel" in df.columns and tipo_sel != "(NÃO ESPECIFICADO)":
+            if "Aplicavel" in df.columns and tipo_sel not in ["(NÃO ESPECIFICADO)", ""]:
                 aplicavel = str(row.get("Aplicavel", "")).upper()
                 if tipo_sel in aplicavel:
                     s += 0.2  # pequeno bônus por alinhamento de tipo
